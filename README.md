@@ -98,6 +98,10 @@ On first run, `random-wallpaper.py` creates a template config at
 - `photo_roots` is searched recursively at any depth, so one top-level
   library folder full of camera/trip subfolders works fine as a single
   entry. Only `.jpg`/`.jpeg` are picked up.
+- `screen_size` (optional): `{"width": 5120, "height": 1440}`. Set it to
+  skip probing the resolution with `xrandr` entirely -- handy if there's no
+  display session (e.g. headless or a bare systemd user timer). Without it
+  the connected display's resolution is read via `xrandr`.
 - `plugins.vision`: if `true`, a single photo gets cropped with the main
   subject kept in frame (via an `opencode` vision model call) instead of a
   plain centred crop. Off by default -- needs `opencode` installed and

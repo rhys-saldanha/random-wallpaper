@@ -55,19 +55,30 @@ REQUIRED_TOOLS = {
 }
 
 
-def check_requirements() -> None:
+def check_requirements(needs_xrandr: bool) -> None:
     """Exits with a clear message listing exactly what's missing if any
     core tool isn't on PATH. Does not install anything itself -- that
     usually needs sudo and package names vary by distro/package manager,
-    so installing is left to you."""
-    missing = {t: pkg for t, pkg in REQUIRED_TOOLS.items() if shutil.which(t) is None}
+    so installing is left to you. xrandr is only required when the
+    'screen_size' config isn't set (see screen_size())."""
+    tools = dict(REQUIRED_TOOLS)
+    if not needs_xrandr:
+        tools.pop("xrandr")
+    missing = {t: pkg for t, pkg in tools.items() if shutil.which(t) is None}
     if not missing:
         return
     lines = "\n".join(f"  {t}  (Debian/Ubuntu: apt install {pkg})" for t, pkg in missing.items())
     sys.exit(f"Missing required tool(s):\n{lines}\nInstall them, then run this again.")
 
 
-def screen_size() -> tuple[int, int]:
+def screen_size(config: dict) -> tuple[int, int]:
+    """Screen resolution: the optional 'screen_size' config takes priority
+    (e.g. {"width": 5120, "height": 1440}) so headless runs don't need a
+    display or xrandr; otherwise the current resolution is probed via
+    xrandr, which needs a connected display."""
+    cfg = config.get("screen_size")
+    if isinstance(cfg, dict) and cfg.get("width") and cfg.get("height"):
+        return int(cfg["width"]), int(cfg["height"])
     out = subprocess.run(["xrandr"], capture_output=True, text=True, check=True).stdout
     for line in out.splitlines():
         if " connected" in line:
@@ -239,11 +250,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    check_requirements()
     config = load_config()
+    check_requirements(config.get("screen_size") is None)
     photo_roots = config["photo_roots"]
 
-    screen_w, screen_h = screen_size()
+    screen_w, screen_h = screen_size(config)
     plugin = enabled_plugin(config, CONFIG_FILE)
 
     if args.photos:

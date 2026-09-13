@@ -170,35 +170,57 @@ class PickGroupTests(unittest.TestCase):
 class ScreenSizeTests(unittest.TestCase):
     @patch("random_wallpaper.subprocess.run")
     def test_parses_connected_output(self, mock_run):
+        # No 'screen_size' in config: falls back to xrandr probing.
         mock_run.return_value = MagicMock(stdout=(
             "Screen 0: minimum 320 x 200\n"
             "DP-0 connected primary 5120x1440+0+0 ...\n"
             "HDMI-1 disconnected\n"
         ))
-        self.assertEqual(rw.screen_size(), (5120, 1440))
+        self.assertEqual(rw.screen_size({}), (5120, 1440))
 
     @patch("random_wallpaper.subprocess.run")
     def test_raises_if_nothing_connected(self, mock_run):
         mock_run.return_value = MagicMock(stdout="Screen 0: minimum 320 x 200\nHDMI-1 disconnected\n")
         with self.assertRaises(RuntimeError):
-            rw.screen_size()
+            rw.screen_size({})
+
+    @patch("random_wallpaper.subprocess.run")
+    def test_uses_config_screen_size_without_probing(self, mock_run):
+        # screen_size in config wins; xrandr is never called.
+        mock_run.side_effect = AssertionError("xrandr must not run when screen_size is configured")
+        self.assertEqual(
+            rw.screen_size({"screen_size": {"width": 3440, "height": 1440}}),
+            (3440, 1440),
+        )
 
 
 class CheckRequirementsTests(unittest.TestCase):
     @patch("random_wallpaper.shutil.which", return_value="/usr/bin/fake")
     def test_passes_silently_when_everything_is_on_path(self, mock_which):
-        rw.check_requirements()  # must not raise
+        rw.check_requirements(True)  # must not raise
 
     @patch("random_wallpaper.shutil.which")
     def test_exits_listing_exactly_whats_missing(self, mock_which):
         mock_which.side_effect = lambda tool: None if tool in ("magick", "gsettings") else f"/usr/bin/{tool}"
         with self.assertRaises(SystemExit) as ctx:
-            rw.check_requirements()
+            rw.check_requirements(True)
         message = str(ctx.exception)
         self.assertIn("magick", message)
         self.assertIn("gsettings", message)
         self.assertNotIn("xrandr", message)
         self.assertNotIn("identify", message)
+
+    @patch("random_wallpaper.shutil.which")
+    def test_skips_xrandr_when_screen_size_is_configured(self, mock_which):
+        mock_which.side_effect = lambda tool: None if tool == "xrandr" else f"/usr/bin/{tool}"
+        rw.check_requirements(False)  # xrandr missing but not required
+
+    @patch("random_wallpaper.shutil.which")
+    def test_still_requires_xrandr_without_config_screen_size(self, mock_which):
+        mock_which.side_effect = lambda tool: None if tool == "xrandr" else f"/usr/bin/{tool}"
+        with self.assertRaises(SystemExit) as ctx:
+            rw.check_requirements(True)
+        self.assertIn("xrandr", str(ctx.exception))
 
 
 class DatesTakenTests(unittest.TestCase):
