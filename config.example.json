@@ -1,0 +1,9 @@
+{
+  "_note": "photo_roots is searched recursively at any depth, so a single top-level library folder full of camera/trip subfolders works fine as one entry -- no need to list every subfolder. You can also list multiple separate roots if your photos live in more than one place. Only .jpg/.jpeg images are picked up (any case). Optional cropping plugins can be enabled under 'plugins' -- see plugins.py for what each one needs installed.",
+  "photo_roots": [
+    "/path/to/your/photo/library"
+  ],
+  "plugins": {
+    "vision": false
+  }
+}

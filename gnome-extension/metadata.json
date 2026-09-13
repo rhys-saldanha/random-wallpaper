@@ -1,0 +1,7 @@
+{
+  "uuid": "random-wallpaper@rhyssaldanha.org",
+  "name": "Random Wallpaper",
+  "description": "Top-bar icon showing where the current wallpaper photos came from, with a button to reroll.",
+  "shell-version": ["48"],
+  "url": ""
+}

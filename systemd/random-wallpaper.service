@@ -1,0 +1,8 @@
+[Unit]
+Description=Set a random photo as the desktop wallpaper
+
+[Service]
+Type=oneshot
+ExecStart=@REPO_DIR@/random-wallpaper.py
+# Photo cache is maintained by scan.py; if it's empty this exits with a hint.
+TimeoutStartSec=30min

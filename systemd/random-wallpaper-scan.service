@@ -1,0 +1,9 @@
+[Unit]
+Description=Build the random wallpaper photo cache (EXIF dates + dimensions)
+
+[Service]
+Type=oneshot
+ExecStart=@REPO_DIR@/scan.py
+# First build over a big library (photographed over a network mount) takes
+# up to ~10-45 min; the scan is resumable so any timeout just resumes next run.
+TimeoutStartSec=2h
